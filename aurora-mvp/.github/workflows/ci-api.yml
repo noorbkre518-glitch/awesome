@@ -1,0 +1,38 @@
+name: ci-api
+on:
+  pull_request:
+    paths: ['services/api/**', '.github/workflows/ci-api.yml']
+  push:
+    branches: [main]
+    paths: ['services/api/**']
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: aurora
+          POSTGRES_PASSWORD: aurora
+          POSTGRES_DB: aurora
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U aurora"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://aurora:aurora@localhost:5432/aurora?schema=public
+      JWT_SECRET: ci-secret
+    defaults:
+      run:
+        working-directory: services/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: 'npm', cache-dependency-path: services/api/package-lock.json }
+      - run: npm ci
+      - run: npx prisma validate
+      - run: npx prisma generate
+      - run: npx prisma migrate deploy
+      - run: npm run build
+      - run: npx jest src --runInBand
+      - run: npx jest --config ./test/jest-e2e.json --runInBand

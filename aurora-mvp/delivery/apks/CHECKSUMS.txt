@@ -1,0 +1,8 @@
+e4876fcc7a0ee477c13884327a508d6f825fc3f131082193c7d6ba3964c0f3e0  aurora-mvp-v1-arm64-v8a-debug.apk
+ae9a647ab9d2a0b2a9b6a32662d9ea9a7dd2aa6dffba4c69433182b84d30d4fe  aurora-mvp-v1-arm64-v8a-release.apk
+
+# sizes (bytes):
+# aurora-mvp-v1-arm64-v8a-debug.apk  75609345
+# aurora-mvp-v1-arm64-v8a-release.apk  17624661
+# built: 2026-07-24T23:31:41Z
+# signing: debug/test key only — NOT a Google Play production signature

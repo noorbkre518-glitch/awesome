@@ -1,0 +1,32 @@
+# secrets & env
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.keystore
+secrets/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# builds & deps (future)
+node_modules/
+dist/
+build/
+coverage/
+*.log
+
+# --- base slice build artifacts ---
+services/api/node_modules/
+services/api/dist/
+services/api/.env
+apps/mobile/.dart_tool/
+apps/mobile/build/
+apps/mobile/android/.gradle/
+apps/mobile/android/local.properties
+apps/mobile/.flutter-plugins-dependencies

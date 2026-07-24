@@ -1,0 +1,69 @@
+name: docs-quality
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Required files exist
+        run: |
+          set -e
+          for f in README.md PROJECT_MASTER_PLAN.md ARCHITECTURE.md ROADMAP.md SECURITY.md \
+                   PRIVACY_ARCHITECTURE.md TRUST_AND_SAFETY.md CONTENT_POLICY.md \
+                   AGE_AND_IDENTITY_VERIFICATION.md PAYMENTS_AND_BILLING.md \
+                   LIVE_STREAMING_ARCHITECTURE.md ACCESSIBILITY.md COPYRIGHT_AND_MUSIC_RIGHTS.md \
+                   VENDOR_REQUIREMENTS.md OPERATIONS_AND_INCIDENT_RESPONSE.md APP_STORE_READINESS.md \
+                   CONTRIBUTING.md CHANGELOG.md LICENSE_DECISION.md .env.example .gitignore \
+                   docs/CHANGELOG_v1.2.md docs/ARCHITECTURE_ACCEPTANCE_CRITERIA.md \
+                   docs/REQUIRED_SPECIALIST_REVIEWS.md docs/PAYMENT_COMPLIANCE_MATRIX_TEMPLATE.md \
+                   docs/DATA_RESIDENCY_AND_TRANSFER_MATRIX_TEMPLATE.md docs/COUNTRY_LAUNCH_CHECKLIST.md \
+                   docs/MVP_PHASES.md docs/DECISION_LOG.md docs/RISK_REGISTER.md docs/OPEN_QUESTIONS.md; do
+            [ -f "$f" ] || { echo "MISSING: $f"; exit 1; }
+          done
+          echo "All required files present."
+
+      - name: No real .env files
+        run: |
+          if find . -name ".env" -o -name ".env.local" -o -name ".env.production" | grep -q .; then
+            echo "Real .env file found — forbidden."; exit 1
+          fi
+          echo "OK"
+
+      - name: No TODO/placeholder in master plan
+        run: |
+          if grep -niE "TODO|FIXME|placeholder|يُدمج النص الأصلي" PROJECT_MASTER_PLAN.md; then
+            echo "Placeholder/TODO found in PROJECT_MASTER_PLAN.md"; exit 1
+          fi
+          echo "OK"
+
+      - name: All numbered sections present (1..41)
+        run: |
+          n=$(grep -cE "^[0-9]+\. " PROJECT_MASTER_PLAN.md || true)
+          # count only section headers that follow the ===== separator
+          n=$(awk 'prev ~ /^={50}$/ && /^[0-9]+\. /{c++} {prev=$0} END{print c}' PROJECT_MASTER_PLAN.md)
+          [ "$n" -eq 41 ] || { echo "Expected 41 sections, found $n"; exit 1; }
+          echo "41 sections OK"
+
+      - name: Secret scan (regex)
+        run: |
+          if grep -rniE "(ghp_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|BEGIN (RSA|EC|OPENSSH|PGP) PRIVATE KEY|xox[baprs]-)" --exclude-dir=.git .; then
+            echo "Potential secret found"; exit 1
+          fi
+          echo "No secrets detected"
+
+      # NOTE: the former "No application code" gate was removed. It enforced a
+      # planning-only repository (README.md files only under apps/services/packages)
+      # and is obsolete now that the runnable API + Flutter app are implemented.
+      # Application code is validated by the ci-api and ci-flutter workflows.
+
+      - name: Markdown basic lint
+        run: |
+          fail=0
+          while IFS= read -r f; do
+            head -c 3 "$f" | grep -q "^#" || head -1 "$f" | grep -qE "^(#|---)" || { echo "No H1/front-matter: $f"; fail=1; }
+          done < <(find . -name "*.md" -not -path "./.git/*" -not -path "./**/node_modules/*")
+          exit $fail

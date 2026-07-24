@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  DEBUG-ONLY network policy (this file exists only in the debug build variant).
+  Permits cleartext HTTP so the app can reach a local dev API:
+    - Android emulator:  http://10.0.2.2:3000/api
+    - Real phone on LAN: http://<your-computer-LAN-IP>:3000/api
+  Release builds never include this file and remain HTTPS-only.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

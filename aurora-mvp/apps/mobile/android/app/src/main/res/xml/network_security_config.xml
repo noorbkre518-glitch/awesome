@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  PRODUCTION / RELEASE network policy.
+  Cleartext (plain HTTP) is not permitted; all API traffic must be HTTPS.
+  The debug build variant overrides this file (src/debug/res/xml/) to allow
+  cleartext against a local development backend only.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>
