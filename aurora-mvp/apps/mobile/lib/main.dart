@@ -1,29 +1,48 @@
 import 'package:flutter/material.dart';
+
 import 'src/api/api_client.dart';
+import 'src/screens/home_screen.dart';
 import 'src/screens/login_screen.dart';
 
-void main() {
-  runApp(AuroraApp(api: ApiClient()));
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final api = ApiClient();
+  await api.initialize();
+  runApp(AuroraApp(api: api));
 }
 
-class AuroraApp extends StatelessWidget {
-  AuroraApp({super.key, required this.api});
+class AuroraApp extends StatefulWidget {
+  const AuroraApp({super.key, required this.api});
   final ApiClient api;
 
+  @override
+  State<AuroraApp> createState() => _AuroraAppState();
+}
+
+class _AuroraAppState extends State<AuroraApp> {
   final GlobalKey<NavigatorState> _navKey = GlobalKey<NavigatorState>();
+  bool _redirecting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.api.onUnauthorized = () async {
+      if (_redirecting) return;
+      _redirecting = true;
+      try {
+        _navKey.currentState?.pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => LoginScreen(api: widget.api)),
+          (_) => false,
+        );
+      } finally {
+        await Future<void>.delayed(const Duration(milliseconds: 250));
+        _redirecting = false;
+      }
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Any 401 on an authenticated request (expired token, logged out elsewhere,
-    // deleted/suspended account) bounces the user back to a fresh login screen.
-    api.onUnauthorized = () {
-      api.setToken(null);
-      _navKey.currentState?.pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => LoginScreen(api: api)),
-        (_) => false,
-      );
-    };
-
     return MaterialApp(
       title: 'Aurora',
       navigatorKey: _navKey,
@@ -35,7 +54,9 @@ class AuroraApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: LoginScreen(api: api),
+      home: widget.api.isAuthenticated
+          ? HomeScreen(api: widget.api)
+          : LoginScreen(api: widget.api),
     );
   }
 }
