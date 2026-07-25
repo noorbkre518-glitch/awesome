@@ -1,0 +1,47 @@
+name: Aurora phone APK
+
+on:
+  push:
+    branches:
+      - agent/aurora-phone-ready
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: aurora-mvp/apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.3
+          channel: stable
+          cache: true
+      - name: Dependencies
+        run: flutter pub get
+      - name: Analyze
+        run: flutter analyze
+      - name: Build phone debug APKs
+        run: flutter build apk --debug --split-per-abi
+      - name: Collect arm64 APK
+        run: |
+          mkdir -p ../../../phone-delivery
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk ../../../phone-delivery/Aurora-phone-debug-arm64.apk
+          sha256sum ../../../phone-delivery/Aurora-phone-debug-arm64.apk | tee ../../../phone-delivery/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aurora-phone-debug-apk
+          path: |
+            aurora-mvp/phone-delivery/Aurora-phone-debug-arm64.apk
+            aurora-mvp/phone-delivery/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
