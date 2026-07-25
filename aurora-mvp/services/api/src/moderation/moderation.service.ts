@@ -27,17 +27,12 @@ export class ModerationService {
     const report = await this.prisma.report.findUnique({ where: { id } });
     if (!report) throw new NotFoundException('Report not found');
 
-    // ACTIONED = the moderator upheld the report: suspend the reported account
-    // (guard blocks all protected access, incl. messaging). DISMISSED lifts it.
+    // DISMISSED resolves only this report. It must never lift a suspension
+    // created by another report or by a separate administrative decision.
     if (status === 'ACTIONED') {
       await this.prisma.user.update({
         where: { id: report.reportedId },
         data: { isSuspended: true, suspendedAt: new Date(), tokenVersion: { increment: 1 } },
-      });
-    } else if (status === 'DISMISSED') {
-      await this.prisma.user.update({
-        where: { id: report.reportedId },
-        data: { isSuspended: false, suspendedAt: null },
       });
     }
 
